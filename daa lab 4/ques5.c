@@ -1,154 +1,81 @@
 #include <stdio.h>
-#include <stdlib.h>
 
-// Helper to allocate an n x n dynamic 2D array
-double **create_matrix(int n)
-{
-    double **mat = (double **)malloc(n * sizeof(double *));
-    for (int i = 0; i < n; i++)
-    {
-        mat[i] = (double *)malloc(n * sizeof(double));
-    }
-    return mat;
-}
+// Structure to represent an interval
+struct Interval {
+    int start;
+    int end;
+};
 
-// Helper to free memory of an n x n array
-void free_matrix(double **mat, int n)
-{
-    for (int i = 0; i < n; i++)
-    {
-        free(mat[i]);
-    }
-    free(mat);
-}
-
-// Core Divide & Conquer algorithm
-void multiply_special(double **A, double **B, double **C,
-                      int rA, int cA, int rB, int cB, int rC, int cC, int size)
-{
-    // Base Case: Single element (1x1)
-    if (size == 1)
-    {
-        C[rC][cC] = A[rA][cA] * B[rB][cB];
-        return;
-    }
-
-    int k = size / 2;
-
-    // Allocate temporary sub-matrices for calculation
-    double **S1 = create_matrix(k);
-    double **S2 = create_matrix(k);
-    double **D1 = create_matrix(k);
-    double **D2 = create_matrix(k);
-    double **P1 = create_matrix(k);
-    double **P2 = create_matrix(k);
-
-    // Step 1: Compute S1 = A1 + A2, S2 = B1 + B2, D1 = A1 - A2, D2 = B1 - B2
-    for (int i = 0; i < k; i++)
-    {
-        for (int j = 0; j < k; j++)
-        {
-            S1[i][j] = A[rA + i][cA + j] + A[rA + i][cA + j + k];
-            D1[i][j] = A[rA + i][cA + j] - A[rA + i][cA + j + k];
-
-            S2[i][j] = B[rB + i][cB + j] + B[rB + i][cB + j + k];
-            D2[i][j] = B[rB + i][cB + j] - B[rB + i][cB + j + k];
+// Helper function to sort intervals by start time using Bubble Sort
+// (Can be replaced with qsort for optimal standard implementation)
+void sortIntervals(struct Interval arr[], int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (arr[j].start > arr[j + 1].start) {
+                struct Interval temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
         }
-    }
-
-    // Step 2: ONLY TWO recursive multiplications
-    multiply_special(S1, S2, P1, 0, 0, 0, 0, 0, 0, k);
-    multiply_special(D1, D2, P2, 0, 0, 0, 0, 0, 0, k);
-
-    // Step 3: Compute C1 & C2 and directly write them into Matrix C
-    for (int i = 0; i < k; i++)
-    {
-        for (int j = 0; j < k; j++)
-        {
-            double c1 = 0.5 * (P1[i][j] + P2[i][j]);
-            double c2 = 0.5 * (P1[i][j] - P2[i][j]);
-
-            C[rC + i][cC + j] = c1;         // Top-Left (C1)
-            C[rC + i][cC + j + k] = c2;     // Top-Right (C2)
-            C[rC + i + k][cC + j] = c2;     // Bottom-Left (C2)
-            C[rC + i + k][cC + j + k] = c1; // Bottom-Right (C1)
-        }
-    }
-
-    // Free intermediate temporary matrices
-    free_matrix(S1, k);
-    free_matrix(S2, k);
-    free_matrix(D1, k);
-    free_matrix(D2, k);
-    free_matrix(P1, k);
-    free_matrix(P2, k);
-}
-
-// Function to print a matrix
-void print_matrix(double **mat, int n)
-{
-    for (int i = 0; i < n; i++)
-    {
-        for (int j = 0; j < n; j++)
-        {
-            printf("%7.2f ", mat[i][j]);
-        }
-        printf("\n");
     }
 }
 
-int main()
-{
-    int n;
+// Function to merge overlapping intervals
+int mergeIntervals(struct Interval input[], int n, struct Interval output[]) {
+    if (n <= 0) return 0;
 
-    printf("Enter the size of the matrix n (must be a power of 2, e.g., 2, 4, 8): ");
-    scanf("%d", &n);
+    // Step 1: Sort intervals by start time
+    sortIntervals(input, n);
 
-    // Simple check for power of 2
-    if (n <= 0 || (n & (n - 1)) != 0)
-    {
-        printf("Error: Matrix size must be a power of 2 (2, 4, 8, 16...)\n");
-        return 1;
-    }
+    // Step 2: Initialize output with the first interval
+    output[0] = input[0];
+    int out_count = 1; // Number of merged intervals stored
 
-    // Allocate matrices based on user input size
-    double **A = create_matrix(n);
-    double **B = create_matrix(n);
-    double **C = create_matrix(n);
+    // Step 3: Iterate through remaining intervals
+    for (int i = 1; i < n; i++) {
+        struct Interval last = output[out_count - 1];
+        struct Interval current = input[i];
 
-    // User input for Matrix A
-    printf("\nEnter elements for Matrix A (%dx%d):\n", n, n);
-    for (int i = 0; i < n; i++)
-    {
-        for (int j = 0; j < n; j++)
-        {
-            printf("A[%d][%d]: ", i, j);
-            scanf("%lf", &A[i][j]);
+        // Check if current overlaps with the last merged interval
+        if (current.start <= last.end) {
+            // Overlap exists: Merge by expanding the end time if needed
+            if (current.end > output[out_count - 1].end) {
+                output[out_count - 1].end = current.end;
+            }
+        } else {
+            // No overlap: Add current interval as a new entry
+            output[out_count] = current;
+            out_count++;
         }
     }
 
-    // User input for Matrix B
-    printf("\nEnter elements for Matrix B (%dx%d):\n", n, n);
-    for (int i = 0; i < n; i++)
-    {
-        for (int j = 0; j < n; j++)
-        {
-            printf("B[%d][%d]: ", i, j);
-            scanf("%lf", &B[i][j]);
-        }
+    return out_count; // Return total merged count
+}
+
+int main() {
+    // Input intervals: {(1,3), (2,6), (8,10), (7,18)}
+    struct Interval input[4] = {
+        {1, 3},
+        {2, 6},
+        {8, 10},
+        {7, 18}
+    };
+    int n = 4;
+    struct Interval output[4];
+
+    printf("Input Intervals:\n");
+    for (int i = 0; i < n; i++) {
+        printf("(%d, %d) ", input[i].start, input[i].end);
     }
+    printf("\n\n");
 
-    // Perform Multiplication
-    multiply_special(A, B, C, 0, 0, 0, 0, 0, 0, n);
+    int merged_size = mergeIntervals(input, n, output);
 
-    // Display Result
-    printf("\n--- Result Matrix C (A * B) ---\n");
-    print_matrix(C, n);
-
-    // Clean up memory
-    free_matrix(A, n);
-    free_matrix(B, n);
-    free_matrix(C, n);
+    printf("Merged Intervals:\n");
+    for (int i = 0; i < merged_size; i++) {
+        printf("(%d, %d) ", output[i].start, output[i].end);
+    }
+    printf("\n");
 
     return 0;
 }

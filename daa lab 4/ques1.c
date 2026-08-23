@@ -1,63 +1,47 @@
 #include <stdio.h>
+struct Item {
+    int number;
+    int color; // 0 for Red, 1 for Blue, 2 for Yellow
+};
 
-int binarySearch(int low, int high, int key, int arr[])
-{
-    while (low <= high)
-    {
-        int mid = (low + high) / 2;
-        if (key == arr[mid])
-            return mid;
-        if (key < arr[mid])
-            high = mid - 1;
+int main() {
+    // Input array of items, already sorted by number
+    struct Item input[6] = {
+        {10, 1}, // (10, Blue)
+        {15, 0}, // (15, Red)
+        {20, 2}, // (20, Yellow)
+        {25, 0}, // (25, Red)
+        {30, 1}, // (30, Blue)
+        {35, 2}  // (35, Yellow)
+    };
+    int n = 6;
+    struct Item output[6]; // Array to hold sorted results
+
+    int count[3] = {0, 0, 0}; 
+    int index[3] = {0, 0, 0}; 
+
+    for (int i = 0; i < n; i++) {
+        count[input[i].color]++;
+    }
+    index[0] = 0;                  // Reds start at index 0
+    index[1] = count[0];           // Blues start right after Reds
+    index[2] = count[0] + count[1];// Yellows start right after Blues
+
+    for (int i = 0; i < n; i++) {
+        int c = input[i].color;
+        output[index[c]] = input[i];
+        index[c]++;
+    }
+
+    printf("Sorted by Color (Red -> Blue -> Yellow):\n");
+    for (int i = 0; i < n; i++) {
+        if (output[i].color == 0)
+            printf("(%d, Red)\n", output[i].number);
+        else if (output[i].color == 1)
+            printf("(%d, Blue)\n", output[i].number);
         else
-            low = mid + 1;
+            printf("(%d, Yellow)\n", output[i].number);
     }
-    return -1;
-}
 
-int ternarySearch(int low, int high, int key, int arr[])
-{
-    while (low <= high)
-    {
-        int third = (high - low) / 3;
-        int mid1 = low + third;
-        int mid2 = high - third;
-        if (key == arr[mid1])
-        {
-            return mid1;
-        }
-        if (key == arr[mid2])
-        {
-            return mid2;
-        }
-        if (key < mid1)
-            high = mid1 - 1;
-        if (key > mid2)
-            low = mid2 + 1;
-    }
-    return -1;
-}
-
-int main()
-{
-    int bcomp = 0, tcomp = 0;
-    int n;
-    printf("Enter the n0. of elements\n");
-    scanf("%d", &n);
-    int arr[n];
-    printf("give input of array:");
-    for (int i = 0; i < n; i++)
-    {
-        scanf("%d", &arr[i]);
-    }
-    printf("Enter the value of the key\n");
-    int key;
-    scanf("%d", &key);
-
-    int b = binarySearch(0, n - 1, key, arr);
-    int t = ternarySearch(0, n - 1, key, arr);
-
-    printf("Through binary search the key is at %d\n", b);
-    printf("Through ternary search the key is at %d \n", t);
     return 0;
 }
